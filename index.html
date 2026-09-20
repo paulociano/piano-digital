@@ -1,56 +1,96 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Piano Digital- PH</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel='stylesheet' type='text/css' href='css/main.css'>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f1eb">
+    <meta name="description" content="Um piano para experimentar, tocar e criar suas próprias melodias. Use o teclado, o mouse ou o toque.">
+    <title>Piano Digital — PH</title>
+    <link rel="icon" href="images/logo.png" type="image/png">
+    <link rel="stylesheet" href="css/main.css">
+    <script src="js/main.js" defer></script>
 </head>
 <body>
-    <img class="logoph" src="images/logo.png" alt="Logo PH colorido">
-    <h1>Piano Digital</h1>
-
-    <div class="keys">
-        <div data-key="keya" class="key white c first"><p>A</p></div>
-        <div data-key="keyw" class="key black"><p>W</p></div>
-        <div data-key="keys" class="key white d"><p>S</p></div>
-        <div data-key="keye" class="key black "><p>E</p></div>
-        <div data-key="keyd" class="key white e"><p>D</p></div>
-        <div data-key="keyf" class="key white f"><p>F</p></div>
-        <div data-key="keyt" class="key black"><p>T</p></div>
-        <div data-key="keyg" class="key white g"><p>G</p></div>
-        <div data-key="keyy" class="key black"><p>Y</p></div>
-        <div data-key="keyh" class="key white a"><p>H</p></div>
-        <div data-key="keyu" class="key black"><p>U</p></div>
-        <div data-key="keyj" class="key white b"><p>J</p></div>
-        <div data-key="keyk" class="key white last"><p>K</p></div>
+    <a class="skip-link" href="#piano">Ir para o piano</a>
+    <div class="page">
+        <header class="site-header">
+            <a class="brand" href="./" aria-label="Piano Digital, início">
+                <img src="images/logo.png" width="44" height="41" alt="PH">
+                <span>PAULO HENRIQUE<span class="brand-detail">EXPERIMENTOS MUSICAIS</span></span>
+            </a>
+            <span class="header-note">Um pouco de música no seu dia.</span>
+        </header>
+        <main>
+            <section class="intro" aria-labelledby="title">
+                <p class="eyebrow">SEU PEQUENO ESTÚDIO</p>
+                <h1 id="title">Toda melodia começa<br>com <em>uma nota.</em></h1>
+                <p class="intro-copy">Explore os sons, encontre um ritmo e crie algo seu.<br> Toque nas teclas ou use as letras do seu teclado.</p>
+            </section>
+            <section class="instrument" id="piano" aria-label="Piano Digital" tabindex="-1">
+                <div class="instrument-toolbar">
+                    <div class="instrument-name"><span class="status-light" aria-hidden="true"></span> PIANO DIGITAL <span class="instrument-range">/ 13 TECLAS</span></div>
+                    <label class="volume-control" for="volume">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>
+                        <span class="sr-only">Volume</span>
+                        <input id="volume" type="range" min="0" max="100" value="70">
+                        <output id="volume-value" for="volume">70%</output>
+                    </label>
+                </div>
+                <div class="keys" role="group" aria-label="Teclas do piano">
+                    <button type="button" data-key="a" data-note="Dó" class="key white" aria-label="Dó, tecla A" aria-keyshortcuts="A"><span class="note">Dó</span><kbd>A</kbd></button>
+                    <button type="button" data-key="w" data-note="Dó sustenido" class="key black" style="--position: 1" aria-label="Dó sustenido, tecla W" aria-keyshortcuts="W"><span class="note">Dó♯</span><kbd>W</kbd></button>
+                    <button type="button" data-key="s" data-note="Ré" class="key white" aria-label="Ré, tecla S" aria-keyshortcuts="S"><span class="note">Ré</span><kbd>S</kbd></button>
+                    <button type="button" data-key="e" data-note="Ré sustenido" class="key black" style="--position: 2" aria-label="Ré sustenido, tecla E" aria-keyshortcuts="E"><span class="note">Ré♯</span><kbd>E</kbd></button>
+                    <button type="button" data-key="d" data-note="Mi" class="key white" aria-label="Mi, tecla D" aria-keyshortcuts="D"><span class="note">Mi</span><kbd>D</kbd></button>
+                    <button type="button" data-key="f" data-note="Fá" class="key white" aria-label="Fá, tecla F" aria-keyshortcuts="F"><span class="note">Fá</span><kbd>F</kbd></button>
+                    <button type="button" data-key="t" data-note="Fá sustenido" class="key black" style="--position: 4" aria-label="Fá sustenido, tecla T" aria-keyshortcuts="T"><span class="note">Fá♯</span><kbd>T</kbd></button>
+                    <button type="button" data-key="g" data-note="Sol" class="key white" aria-label="Sol, tecla G" aria-keyshortcuts="G"><span class="note">Sol</span><kbd>G</kbd></button>
+                    <button type="button" data-key="y" data-note="Sol sustenido" class="key black" style="--position: 5" aria-label="Sol sustenido, tecla Y" aria-keyshortcuts="Y"><span class="note">Sol♯</span><kbd>Y</kbd></button>
+                    <button type="button" data-key="h" data-note="Lá" class="key white" aria-label="Lá, tecla H" aria-keyshortcuts="H"><span class="note">Lá</span><kbd>H</kbd></button>
+                    <button type="button" data-key="u" data-note="Lá sustenido" class="key black" style="--position: 6" aria-label="Lá sustenido, tecla U" aria-keyshortcuts="U"><span class="note">Lá♯</span><kbd>U</kbd></button>
+                    <button type="button" data-key="j" data-note="Si" class="key white" aria-label="Si, tecla J" aria-keyshortcuts="J"><span class="note">Si</span><kbd>J</kbd></button>
+                    <button type="button" data-key="k" data-note="Dó agudo" class="key white" aria-label="Dó agudo, tecla K" aria-keyshortcuts="K"><span class="note">Dó</span><kbd>K</kbd></button>
+                </div>
+                <div class="instrument-bottom"><span>ACÚSTICO · UMA OITAVA</span><span id="current-note">Pronto para tocar</span></div>
+            </section>
+            <div class="playing-tip"><span aria-hidden="true">↳</span> Combine teclas para tocar acordes. Deixe a curiosidade guiar.</div>
+            <section class="composer" aria-labelledby="composer-title">
+                <div class="composer-heading">
+                    <div><p class="eyebrow">DA IDEIA AO SOM</p><h2 id="composer-title">Escreva sua melodia.</h2></div>
+                    <button type="button" class="text-button" id="example">Experimentar um exemplo <span aria-hidden="true">↗</span></button>
+                </div>
+                <form id="composer-form" novalidate>
+                    <label for="melody">Sequência de notas</label>
+                    <textarea id="melody" rows="2" maxlength="500" spellcheck="false" autocapitalize="characters" autocomplete="off" aria-describedby="melody-help melody-error" placeholder="Ex.: A S D F G — G F D S A"></textarea>
+                    <p id="melody-help" class="help">Use A W S E D F T G Y H U J K. Espaços separam as notas; um traço (–) cria uma pausa.</p>
+                    <p id="melody-error" class="error" role="alert" hidden></p>
+                    <div class="composer-controls">
+                        <div class="transport">
+                            <button class="primary-button" id="play" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z"/></svg><span>Tocar melodia</span></button>
+                            <button class="stop-button" id="stop" type="button" disabled><span aria-hidden="true">■</span> Parar</button>
+                        </div>
+                        <label class="tempo-control" for="tempo"><span>Andamento <output id="tempo-value" for="tempo">120 BPM</output></span><input id="tempo" type="range" min="60" max="180" step="5" value="120"></label>
+                    </div>
+                    <progress id="progress" value="0" max="1" aria-label="Progresso da melodia"></progress>
+                    <p class="playback-status" id="playback-status" role="status">Seu próximo som começa aqui.</p>
+                </form>
+            </section>
+            <noscript><p class="error">Ative o JavaScript no navegador para tocar o piano.</p></noscript>
+        </main>
+        <footer><span>Piano Digital <span aria-hidden="true">/</span> Feito por Paulo Henrique</span><span>Explore. Toque. Repita.</span></footer>
     </div>
-    <div class="composer">
-        <input type="text" id="input" placeholder="Escreva sua melodia..." />
-        <button onclick="letsPlay()"><img class="iconPlay" src="images/play.png" alt="Ícone do botão tocar com um triângulo apontando para a direita"></button>
-    </div>
-
-    <footer>
-        <p>Desenvolvido por Paulo Henrique - 2022</p>
-    </footer>
-    
-    <audio id="s_keya" src="music/keya.wav"></audio>
-    <audio id="s_keyw" src="music/keyw.wav"></audio>
-    <audio id="s_keys" src="music/keys.wav"></audio>
-    <audio id="s_keye" src="music/keye.wav"></audio>
-    <audio id="s_keyd" src="music/keyd.wav"></audio>
-    <audio id="s_keyf" src="music/keyf.wav"></audio>
-    <audio id="s_keyt" src="music/keyt.wav"></audio>
-    <audio id="s_keyg" src="music/keyg.wav"></audio>
-    <audio id="s_keyy" src="music/keyy.wav"></audio>
-    <audio id="s_keyh" src="music/keyh.wav"></audio>
-    <audio id="s_keyu" src="music/keyu.wav"></audio>
-    <audio id="s_keyj" src="music/keyj.wav"></audio>
-    <audio id="s_keyk" src="music/keyk.wav"></audio>
-
-    <script src='js/main.js'></script>
-</body>
-</html>
+    <audio id="s_keya" preload="none" src="music/keya.wav"></audio>
+    <audio id="s_keyw" preload="none" src="music/keyw.wav"></audio>
+    <audio id="s_keys" preload="none" src="music/keys.wav"></audio>
+    <audio id="s_keye" preload="none" src="music/keye.wav"></audio>
+    <audio id="s_keyd" preload="none" src="music/keyd.wav"></audio>
+    <audio id="s_keyf" preload="none" src="music/keyf.wav"></audio>
+    <audio id="s_keyt" preload="none" src="music/keyt.wav"></audio>
+    <audio id="s_keyg" preload="none" src="music/keyg.wav"></audio>
+    <audio id="s_keyy" preload="none" src="music/keyy.wav"></audio>
+    <audio id="s_keyh" preload="none" src="music/keyh.wav"></audio>
+    <audio id="s_keyu" preload="none" src="music/keyu.wav"></audio>
+    <audio id="s_keyj" preload="none" src="music/keyj.wav"></audio>
+    <audio id="s_keyk" preload="none" src="music/keyk.wav"></audio>
 </body>
 </html>
