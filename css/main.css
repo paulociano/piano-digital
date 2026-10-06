@@ -347,3 +347,27 @@ body.hide-shortcuts .key kbd { opacity: 0; transform: translateY(4px); }
     .sequence-heading strong { font-size: 16px; }
     .sequence-track { margin-inline: -2px; }
 }
+
+
+/* Performance timing + audio engine controls */
+.timing-button {
+    min-height: 46px;
+    padding: 0 15px;
+    border: 1px solid #cfc4b8;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+.timing-button:not(:disabled):hover { background: #e9e2d8; color: var(--ink); }
+.timing-button[aria-pressed="true"] {
+    border-color: #b57958;
+    background: #f0dfd3;
+    color: #6d3f2d;
+}
+.timing-button:disabled { opacity: .4; }
+@media (max-width: 600px) {
+    .transport { flex-wrap: wrap; }
+    .timing-button { flex-basis: 100%; }
+}
