@@ -147,8 +147,7 @@
 
     function syncMelodyFromNotes(notes) {
         melody.value = notes.map(note => note === '-' ? '—' : note.toUpperCase()).join(' ');
-        ensureAudioEngine();
-    renderSequence();
+        renderSequence();
     }
 
     function updateKey(letter) {
