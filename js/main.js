@@ -194,7 +194,7 @@
         recordingStatus.textContent = `${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota gravada' : 'notas gravadas'} · ritmo e duração em captura.`;
     }
 
-    function endRecordedNote(token, fallbackDuration = 180) {
+    function endRecordedNote(token) {
         if (!token) return;
         const event = activeRecordingNotes.get(token);
         if (!event) return;
@@ -351,14 +351,15 @@
         const key = event.target.closest('[data-key]');
         if (!key) return;
         const letter = key.dataset.key;
-        playNote(letter, {durationMs: 180});
+        const token = `click:${letter}`;
+        playNote(letter, {durationMs: 180, recordToken: token});
         if (recording && !playing) {
-            beginRecordedNote(letter, null);
             const last = recordedPerformance.at(-1);
             if (last) {
                 last.duration = 180;
                 delete last.startedAt;
             }
+            activeRecordingNotes.delete(token);
             renderSequence();
         }
         flashKey(letter);
@@ -405,8 +406,10 @@
             const noteIndex = index;
             const note = notes[index++];
             renderSequence(noteIndex);
-            const interval = performanceMode && index < notes.length
-                ? Math.min(Math.max(recordedPerformance[index].delay, 70), 2400)
+            const interval = performanceMode
+                ? (index < notes.length
+                    ? Math.min(Math.max(recordedPerformance[index].delay, 0), 2400)
+                    : Math.min(Math.max(recordedPerformance[noteIndex].duration || 180, 80), 4000))
                 : 60000 / Number(tempo.value);
             if (note !== '-') {
                 const duration = performanceMode
@@ -428,6 +431,8 @@
         if (!recording) return;
         finalizeOpenRecordedNotes();
         recording = false;
+        melody.readOnly = false;
+        renderSequence();
         recordButton.classList.remove('is-recording');
         recordButton.setAttribute('aria-pressed', 'false');
         recordLabel.textContent = 'Gravar';
@@ -466,6 +471,7 @@
         melody.removeAttribute('aria-invalid');
         clearRecordingButton.disabled = true;
         recording = true;
+        melody.readOnly = true;
         recordButton.classList.add('is-recording');
         recordButton.setAttribute('aria-pressed', 'true');
         recordLabel.textContent = 'Parar gravação';
