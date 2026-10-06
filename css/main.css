@@ -371,3 +371,18 @@ body.hide-shortcuts .key kbd { opacity: 0; transform: translateY(4px); }
     .transport { flex-wrap: wrap; }
     .timing-button { flex-basis: 100%; }
 }
+
+
+/* Performance articulation */
+.sequence-duration {
+    padding: 2px 5px;
+    border-radius: 999px;
+    background: #eee5db;
+    color: #806f61;
+    font: 700 8px "Segoe UI", Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
+}
+.sequence-step.is-active .sequence-duration {
+    background: #e5c5b0;
+    color: #6b3e2c;
+}
