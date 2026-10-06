@@ -184,6 +184,7 @@ body {
 }
 .instrument > * { position: relative; z-index: 1; }
 .key { overflow: hidden; }
+.white { position: relative; }
 .key::after {
     content: "";
     position: absolute;
