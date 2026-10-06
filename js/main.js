@@ -170,6 +170,7 @@
     form.addEventListener('submit', event => {
         event.preventDefault();
         if (playing) return;
+        if (recording) stopRecording();
         const notes = Array.from(melody.value.toLowerCase().replace(/\s/g, '').replace(/[–—]/g, '-'));
         if (!notes.some(note => keys.has(note)) || notes.some(note => note !== '-' && !keys.has(note))) {
             error.textContent = 'Escreva pelo menos uma nota. Use apenas A W S E D F T G Y H U J K, espaços e traços para as pausas.';
@@ -275,6 +276,7 @@
         status.textContent = 'Sua melodia está pronta para ganhar som.';
     });
     exampleButton.addEventListener('click', () => {
+        if (recording) stopRecording();
         melody.value = 'D D F G G F D S A A S D D S S — D D F G G F D S A A S D S A A';
         error.hidden = true;
         melody.removeAttribute('aria-invalid');
