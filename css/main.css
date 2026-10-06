@@ -253,3 +253,97 @@ body.hide-shortcuts .key kbd { opacity: 0; transform: translateY(4px); }
 @media (prefers-reduced-motion: reduce) {
     .record-button.is-recording .record-dot { animation: none; }
 }
+
+
+/* Visual sequencer */
+.sequence-panel {
+    margin: 0 0 18px;
+    padding: 18px 19px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255,255,255,.24);
+}
+.sequence-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+.sequence-heading > div { display: grid; gap: 4px; }
+.sequence-heading strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    font-weight: 400;
+}
+.sequence-count {
+    color: var(--muted);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+}
+.sequence-track {
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #c7b8aa transparent;
+}
+.sequence-empty { color: var(--muted); font-size: 11px; }
+.sequence-step {
+    position: relative;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 8px 7px 10px;
+    border: 1px solid #d2c7bc;
+    border-radius: 999px;
+    background: #fbf8f2;
+    color: var(--ink);
+    transition: border-color 120ms, background-color 120ms, transform 120ms;
+}
+.sequence-step.is-pause {
+    border-style: dashed;
+    background: transparent;
+    color: var(--muted);
+}
+.sequence-step.is-active {
+    border-color: var(--copper);
+    background: #f1dfd2;
+    transform: translateY(-2px);
+}
+.sequence-note {
+    min-width: 27px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 13px;
+    text-align: center;
+}
+.sequence-key {
+    color: var(--muted);
+    font: 700 8px "Segoe UI", Arial, sans-serif;
+    letter-spacing: .5px;
+}
+.sequence-remove {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #9b8e82;
+    font-size: 13px;
+    line-height: 1;
+}
+.sequence-remove:hover { background: #ece3da; color: var(--ink); }
+
+@media (max-width: 600px) {
+    .sequence-panel { padding-inline: 14px; }
+    .sequence-heading { align-items: flex-start; }
+    .sequence-heading strong { font-size: 16px; }
+    .sequence-track { margin-inline: -2px; }
+}
