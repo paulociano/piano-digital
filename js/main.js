@@ -15,11 +15,20 @@
     const error = document.getElementById('melody-error');
     const progress = document.getElementById('progress');
     const currentNote = document.getElementById('current-note');
+    const shortcutToggle = document.getElementById('shortcut-toggle');
+    const introPrompt = document.getElementById('intro-prompt');
+    const recordButton = document.getElementById('record');
+    const recordLabel = document.getElementById('record-label');
+    const clearRecordingButton = document.getElementById('clear-recording');
+    const recordingStatus = document.getElementById('recording-status');
     const heldKeys = new Set();
     const pointers = new Map();
     const flashes = new Map();
     let timer = null;
     let playing = false;
+    let recording = false;
+    let recordingNotes = [];
+    let hasPlayedFirstNote = false;
     let run = 0;
 
     function updateKey(letter) {
@@ -38,6 +47,17 @@
     function playNote(letter) {
         const audio = sounds.get(letter);
         if (!audio) return;
+
+        if (!hasPlayedFirstNote) {
+            hasPlayedFirstNote = true;
+            introPrompt.innerHTML = '<span aria-hidden="true">↳</span> Agora experimente duas teclas juntas. Você já está tocando.';
+        }
+        if (recording && !playing) {
+            recordingNotes.push(letter.toUpperCase());
+            melody.value = recordingNotes.join(' ');
+            clearRecordingButton.disabled = false;
+            recordingStatus.textContent = `${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota gravada' : 'notas gravadas'}.`;
+        }
         const attempt = run;
         audio.volume = Number(volume.value) / 100;
         audio.currentTime = 0;
@@ -68,6 +88,7 @@
         stopButton.disabled = true;
         melody.readOnly = false;
         exampleButton.disabled = false;
+        recordButton.disabled = false;
         sounds.forEach(audio => {
             audio.pause();
             if (audio.readyState > 0) audio.currentTime = 0;
@@ -83,6 +104,10 @@
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && playing) {
             stopPlayback();
+            return;
+        }
+        if (event.key === 'Escape' && recording) {
+            stopRecording();
             return;
         }
         if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.isComposing || editableTarget(event.target)) return;
@@ -117,6 +142,19 @@
         pointers.delete(event.pointerId);
         updateKey(letter);
     }
+    keyboard.addEventListener('pointermove', event => {
+        const previous = pointers.get(event.pointerId);
+        if (!previous) return;
+        const hit = document.elementFromPoint(event.clientX, event.clientY);
+        const key = hit && hit.closest ? hit.closest('[data-key]') : null;
+        if (!key || key.dataset.key === previous) return;
+        const letter = key.dataset.key;
+        pointers.set(event.pointerId, letter);
+        updateKey(previous);
+        updateKey(letter);
+        playNote(letter);
+    });
+
     keyboard.addEventListener('pointerup', releasePointer);
     keyboard.addEventListener('pointercancel', releasePointer);
     keyboard.addEventListener('lostpointercapture', releasePointer);
@@ -148,6 +186,7 @@
         stopButton.disabled = false;
         melody.readOnly = true;
         exampleButton.disabled = true;
+        recordButton.disabled = true;
         progress.max = notes.length;
         progress.value = 0;
         status.textContent = 'Tocando sua melodia. Use Parar ou Esc para interromper.';
@@ -174,6 +213,59 @@
             timer = setTimeout(next, interval);
         }
         next();
+    });
+
+    function stopRecording() {
+        if (!recording) return;
+        recording = false;
+        recordButton.classList.remove('is-recording');
+        recordButton.setAttribute('aria-pressed', 'false');
+        recordLabel.textContent = 'Gravar';
+        recordingStatus.textContent = recordingNotes.length
+            ? `Gravação concluída com ${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota' : 'notas'}.`
+            : 'Nenhuma nota gravada.';
+        status.textContent = recordingNotes.length
+            ? 'Sua performance virou uma sequência editável.'
+            : 'Toque alguma nota durante a gravação.';
+    }
+
+    recordButton.setAttribute('aria-pressed', 'false');
+    recordButton.addEventListener('click', () => {
+        if (playing) return;
+        if (recording) {
+            stopRecording();
+            melody.focus();
+            return;
+        }
+        recordingNotes = [];
+        melody.value = '';
+        progress.value = 0;
+        error.hidden = true;
+        melody.removeAttribute('aria-invalid');
+        clearRecordingButton.disabled = true;
+        recording = true;
+        recordButton.classList.add('is-recording');
+        recordButton.setAttribute('aria-pressed', 'true');
+        recordLabel.textContent = 'Parar gravação';
+        recordingStatus.textContent = 'Gravando. Toque no piano ou use o teclado.';
+        status.textContent = 'Performance em gravação.';
+    });
+
+    clearRecordingButton.addEventListener('click', () => {
+        if (recording) stopRecording();
+        recordingNotes = [];
+        melody.value = '';
+        progress.value = 0;
+        clearRecordingButton.disabled = true;
+        recordingStatus.textContent = 'Pronto para gravar.';
+        status.textContent = 'Seu próximo som começa aqui.';
+        melody.focus();
+    });
+
+    shortcutToggle.addEventListener('click', () => {
+        const hidden = document.body.classList.toggle('hide-shortcuts');
+        shortcutToggle.setAttribute('aria-pressed', String(!hidden));
+        shortcutToggle.firstChild.textContent = hidden ? 'Mostrar teclas ' : 'Teclas ';
     });
 
     melody.addEventListener('input', () => {
@@ -203,6 +295,9 @@
     });
     window.addEventListener('blur', clearKeys);
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden) stopPlayback('Piano pausado ao sair da página.');
+        if (document.hidden) {
+            if (recording) stopRecording();
+            stopPlayback('Piano pausado ao sair da página.');
+        }
     });
 })();
