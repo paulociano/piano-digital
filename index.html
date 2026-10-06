@@ -75,7 +75,19 @@
                     </div>
                 </div>
                 <form id="composer-form" novalidate>
-                    <label for="melody">Sequência de notas</label>
+                    <div class="sequence-panel" aria-labelledby="sequence-title">
+                        <div class="sequence-heading">
+                            <div>
+                                <span class="capture-kicker">SEQUENCIADOR</span>
+                                <strong id="sequence-title">Sua melodia, nota por nota.</strong>
+                            </div>
+                            <span class="sequence-count" id="sequence-count">0 notas</span>
+                        </div>
+                        <div class="sequence-track" id="sequence-track" aria-live="polite">
+                            <span class="sequence-empty">Grave ou escreva algumas notas para começar.</span>
+                        </div>
+                    </div>
+                    <label for="melody">Editar sequência</label>
                     <textarea id="melody" rows="2" maxlength="500" spellcheck="false" autocapitalize="characters" autocomplete="off" aria-describedby="melody-help melody-error" placeholder="Ex.: A S D F G — G F D S A"></textarea>
                     <p id="melody-help" class="help">Use A W S E D F T G Y H U J K. Espaços separam as notas; um traço (–) cria uma pausa.</p>
                     <p id="melody-error" class="error" role="alert" hidden></p>
