@@ -29,6 +29,8 @@
     const flashes = new Map();
     const audioBuffers = new Map();
     const activeSources = new Set();
+    const activeRecordingNotes = new Map();
+    const fallbackStops = new Set();
     let audioContext = null;
     let masterGain = null;
     let audioLoading = null;
@@ -68,7 +70,7 @@
         return audioContext;
     }
 
-    function playBufferedNote(letter) {
+    function playBufferedNote(letter, durationMs = null) {
         const context = ensureAudioEngine();
         const buffer = audioBuffers.get(letter);
         if (!context || !buffer || !masterGain) return false;
@@ -78,6 +80,10 @@
         activeSources.add(source);
         source.onended = () => activeSources.delete(source);
         source.start();
+        if (Number.isFinite(durationMs)) {
+            const safeDuration = Math.min(Math.max(durationMs, 80), 4000);
+            try { source.stop(context.currentTime + safeDuration / 1000); } catch {}
+        }
         return true;
     }
 
@@ -130,6 +136,15 @@
             keyLabel.className = 'sequence-key';
             keyLabel.textContent = note === '-' ? '—' : note.toUpperCase();
 
+            if (note !== '-' && performanceMatches(validNotes)) {
+                const duration = document.createElement('span');
+                duration.className = 'sequence-duration';
+                duration.textContent = `${Math.round(recordedPerformance[index].duration || 180)} ms`;
+                step.append(label, keyLabel, duration);
+            } else {
+                step.append(label, keyLabel);
+            }
+
             const remove = document.createElement('button');
             remove.type = 'button';
             remove.className = 'sequence-remove';
@@ -137,7 +152,7 @@
             remove.setAttribute('aria-label', `Remover ${noteLabel(note)} da sequência`);
             remove.textContent = '×';
 
-            step.append(label, keyLabel, remove);
+            step.append(remove);
             sequenceTrack.append(step);
         });
 
@@ -163,32 +178,70 @@
         updateKey(letter);
     }
 
-    function playNote(letter) {
+    function beginRecordedNote(letter, token) {
+        if (!recording || playing) return;
+        const now = performance.now();
+        const rawDelay = recordingNotes.length ? now - recordingLastTime : 0;
+        const delay = recordingNotes.length ? Math.min(Math.max(rawDelay, 0), 2400) : 0;
+        recordingLastTime = now;
+        recordingNotes.push(letter.toUpperCase());
+        const event = {note: letter, delay, duration: null, startedAt: now};
+        recordedPerformance.push(event);
+        if (token) activeRecordingNotes.set(token, event);
+        melody.value = recordingNotes.join(' ');
+        renderSequence();
+        clearRecordingButton.disabled = false;
+        recordingStatus.textContent = `${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota gravada' : 'notas gravadas'} · ritmo e duração em captura.`;
+    }
+
+    function endRecordedNote(token, fallbackDuration = 180) {
+        if (!token) return;
+        const event = activeRecordingNotes.get(token);
+        if (!event) return;
+        const now = performance.now();
+        event.duration = Math.min(Math.max(now - event.startedAt, 80), 4000);
+        delete event.startedAt;
+        activeRecordingNotes.delete(token);
+        renderSequence();
+    }
+
+    function finalizeOpenRecordedNotes() {
+        const now = performance.now();
+        activeRecordingNotes.forEach(event => {
+            event.duration = Math.min(Math.max(now - event.startedAt, 80), 4000);
+            delete event.startedAt;
+        });
+        activeRecordingNotes.clear();
+        recordedPerformance.forEach(event => {
+            if (!Number.isFinite(event.duration)) event.duration = 180;
+            delete event.startedAt;
+        });
+    }
+
+    function playNote(letter, options = {}) {
         const audio = sounds.get(letter);
         if (!audio) return;
+        const {recordToken = null, durationMs = null} = options;
 
         if (!hasPlayedFirstNote) {
             hasPlayedFirstNote = true;
             introPrompt.innerHTML = '<span aria-hidden="true">↳</span> Agora experimente duas teclas juntas. Você já está tocando.';
         }
-        if (recording && !playing) {
-            const now = performance.now();
-            const delay = recordingNotes.length ? Math.min(Math.max(now - recordingLastTime, 70), 2400) : 0;
-            recordingLastTime = now;
-            recordingNotes.push(letter.toUpperCase());
-            recordedPerformance.push({note: letter, delay});
-            melody.value = recordingNotes.join(' ');
-            renderSequence();
-            clearRecordingButton.disabled = false;
-            recordingStatus.textContent = `${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota gravada' : 'notas gravadas'} · ritmo capturado.`;
-        }
+        beginRecordedNote(letter, recordToken);
         currentNote.textContent = keys.get(letter).dataset.note;
-        if (playBufferedNote(letter)) return;
+        if (playBufferedNote(letter, durationMs)) return;
 
         const attempt = run;
         audio.volume = Number(volume.value) / 100;
         audio.currentTime = 0;
         const result = audio.play();
+        if (Number.isFinite(durationMs)) {
+            const stopTimer = setTimeout(() => {
+                fallbackStops.delete(stopTimer);
+                audio.pause();
+            }, Math.min(Math.max(durationMs, 80), 4000));
+            fallbackStops.add(stopTimer);
+        }
         if (result) result.catch(reason => {
             if (reason.name === 'AbortError' || attempt !== run) return;
             stopPlayback('Não foi possível tocar o áudio. Tente novamente.');
@@ -218,6 +271,8 @@
             try { source.stop(); } catch {}
         });
         activeSources.clear();
+        fallbackStops.forEach(clearTimeout);
+        fallbackStops.clear();
         sounds.forEach(audio => {
             audio.pause();
             if (audio.readyState > 0) audio.currentTime = 0;
@@ -245,13 +300,14 @@
         event.preventDefault();
         heldKeys.add(letter);
         updateKey(letter);
-        playNote(letter);
+        playNote(letter, {recordToken: `kbd:${letter}`});
     });
 
     document.addEventListener('keyup', event => {
         const letter = event.key.toLowerCase();
         if (!keys.has(letter)) return;
         heldKeys.delete(letter);
+        endRecordedNote(`kbd:${letter}`);
         updateKey(letter);
     });
 
@@ -262,12 +318,13 @@
         key.setPointerCapture(event.pointerId);
         pointers.set(event.pointerId, letter);
         updateKey(letter);
-        playNote(letter);
+        playNote(letter, {recordToken: `ptr:${event.pointerId}`});
     });
 
     function releasePointer(event) {
         const letter = pointers.get(event.pointerId);
         if (!letter) return;
+        endRecordedNote(`ptr:${event.pointerId}`);
         pointers.delete(event.pointerId);
         updateKey(letter);
     }
@@ -278,10 +335,11 @@
         const key = hit && hit.closest ? hit.closest('[data-key]') : null;
         if (!key || key.dataset.key === previous) return;
         const letter = key.dataset.key;
+        endRecordedNote(`ptr:${event.pointerId}`);
         pointers.set(event.pointerId, letter);
         updateKey(previous);
         updateKey(letter);
-        playNote(letter);
+        playNote(letter, {recordToken: `ptr:${event.pointerId}`});
     });
 
     keyboard.addEventListener('pointerup', releasePointer);
@@ -292,8 +350,18 @@
         if (event.detail !== 0) return;
         const key = event.target.closest('[data-key]');
         if (!key) return;
-        playNote(key.dataset.key);
-        flashKey(key.dataset.key);
+        const letter = key.dataset.key;
+        playNote(letter, {durationMs: 180});
+        if (recording && !playing) {
+            beginRecordedNote(letter, null);
+            const last = recordedPerformance.at(-1);
+            if (last) {
+                last.duration = 180;
+                delete last.startedAt;
+            }
+            renderSequence();
+        }
+        flashKey(letter);
     });
 
     form.addEventListener('submit', event => {
@@ -341,8 +409,11 @@
                 ? Math.min(Math.max(recordedPerformance[index].delay, 70), 2400)
                 : 60000 / Number(tempo.value);
             if (note !== '-') {
-                playNote(note);
-                flashKey(note, Math.min(interval * .75, 350));
+                const duration = performanceMode
+                    ? Math.min(Math.max(recordedPerformance[noteIndex].duration || interval * .75, 80), 4000)
+                    : Math.min(interval * .75, 500);
+                playNote(note, {durationMs: duration});
+                flashKey(note, Math.min(duration, 500));
             } else {
                 currentNote.textContent = 'Pausa';
                 sounds.forEach(audio => audio.pause());
@@ -355,6 +426,7 @@
 
     function stopRecording() {
         if (!recording) return;
+        finalizeOpenRecordedNotes();
         recording = false;
         recordButton.classList.remove('is-recording');
         recordButton.setAttribute('aria-pressed', 'false');
@@ -382,6 +454,7 @@
         }
         recordingNotes = [];
         recordedPerformance = [];
+        activeRecordingNotes.clear();
         recordingLastTime = performance.now();
         usePerformanceTiming = false;
         performanceTimingButton.disabled = true;
@@ -403,6 +476,7 @@
     clearRecordingButton.addEventListener('click', () => {
         if (recording) stopRecording();
         recordingNotes = [];
+        activeRecordingNotes.clear();
         invalidatePerformanceTiming();
         melody.value = '';
         renderSequence();
@@ -481,7 +555,10 @@
     });
     renderSequence();
 
-    window.addEventListener('blur', clearKeys);
+    window.addEventListener('blur', () => {
+        if (recording) finalizeOpenRecordedNotes();
+        clearKeys();
+    });
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             if (recording) stopRecording();
