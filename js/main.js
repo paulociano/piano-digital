@@ -21,6 +21,8 @@
     const recordLabel = document.getElementById('record-label');
     const clearRecordingButton = document.getElementById('clear-recording');
     const recordingStatus = document.getElementById('recording-status');
+    const sequenceTrack = document.getElementById('sequence-track');
+    const sequenceCount = document.getElementById('sequence-count');
     const heldKeys = new Set();
     const pointers = new Map();
     const flashes = new Map();
@@ -30,6 +32,63 @@
     let recordingNotes = [];
     let hasPlayedFirstNote = false;
     let run = 0;
+
+    function parseMelody(value = melody.value) {
+        return Array.from(value.toLowerCase().replace(/\s/g, '').replace(/[–—]/g, '-'));
+    }
+
+    function noteLabel(letter) {
+        if (letter === '-') return 'Pausa';
+        const key = keys.get(letter);
+        return key ? key.dataset.note : letter.toUpperCase();
+    }
+
+    function renderSequence(activeIndex = -1) {
+        const notes = parseMelody();
+        const validNotes = notes.filter(note => note === '-' || keys.has(note));
+        sequenceCount.textContent = `${validNotes.length} ${validNotes.length === 1 ? 'passo' : 'passos'}`;
+        sequenceTrack.textContent = '';
+
+        if (!validNotes.length) {
+            const empty = document.createElement('span');
+            empty.className = 'sequence-empty';
+            empty.textContent = 'Grave ou escreva algumas notas para começar.';
+            sequenceTrack.append(empty);
+            return;
+        }
+
+        validNotes.forEach((note, index) => {
+            const step = document.createElement('span');
+            step.className = `sequence-step${note === '-' ? ' is-pause' : ''}${index === activeIndex ? ' is-active' : ''}`;
+            step.dataset.sequenceIndex = String(index);
+
+            const label = document.createElement('span');
+            label.className = 'sequence-note';
+            label.textContent = noteLabel(note);
+
+            const keyLabel = document.createElement('span');
+            keyLabel.className = 'sequence-key';
+            keyLabel.textContent = note === '-' ? '—' : note.toUpperCase();
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'sequence-remove';
+            remove.dataset.removeIndex = String(index);
+            remove.setAttribute('aria-label', `Remover ${noteLabel(note)} da sequência`);
+            remove.textContent = '×';
+
+            step.append(label, keyLabel, remove);
+            sequenceTrack.append(step);
+        });
+
+        const active = sequenceTrack.querySelector('.is-active');
+        if (active) active.scrollIntoView({block:'nearest', inline:'nearest'});
+    }
+
+    function syncMelodyFromNotes(notes) {
+        melody.value = notes.map(note => note === '-' ? '—' : note.toUpperCase()).join(' ');
+        renderSequence();
+    }
 
     function updateKey(letter) {
         keys.get(letter).classList.toggle('active', heldKeys.has(letter) || Array.from(pointers.values()).includes(letter) || flashes.has(letter));
@@ -55,6 +114,7 @@
         if (recording && !playing) {
             recordingNotes.push(letter.toUpperCase());
             melody.value = recordingNotes.join(' ');
+            renderSequence();
             clearRecordingButton.disabled = false;
             recordingStatus.textContent = `${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota gravada' : 'notas gravadas'}.`;
         }
@@ -171,7 +231,7 @@
         event.preventDefault();
         if (playing) return;
         if (recording) stopRecording();
-        const notes = Array.from(melody.value.toLowerCase().replace(/\s/g, '').replace(/[–—]/g, '-'));
+        const notes = parseMelody();
         if (!notes.some(note => keys.has(note)) || notes.some(note => note !== '-' && !keys.has(note))) {
             error.textContent = 'Escreva pelo menos uma nota. Use apenas A W S E D F T G Y H U J K, espaços e traços para as pausas.';
             error.hidden = false;
@@ -197,11 +257,14 @@
         function next() {
             if (!playing || run !== thisRun) return;
             if (index >= notes.length) {
+                renderSequence();
                 stopPlayback('Melodia concluída. Que tal criar outra?');
                 playButton.focus();
                 return;
             }
+            const noteIndex = index;
             const note = notes[index++];
+            renderSequence(noteIndex);
             const interval = 60000 / Number(tempo.value);
             if (note !== '-') {
                 playNote(note);
@@ -240,6 +303,7 @@
         }
         recordingNotes = [];
         melody.value = '';
+        renderSequence();
         progress.value = 0;
         error.hidden = true;
         melody.removeAttribute('aria-invalid');
@@ -256,6 +320,7 @@
         if (recording) stopRecording();
         recordingNotes = [];
         melody.value = '';
+        renderSequence();
         progress.value = 0;
         clearRecordingButton.disabled = true;
         recordingStatus.textContent = 'Pronto para gravar.';
@@ -269,7 +334,20 @@
         shortcutToggle.firstChild.textContent = hidden ? 'Mostrar teclas ' : 'Teclas ';
     });
 
+    sequenceTrack.addEventListener('click', event => {
+        const remove = event.target.closest('[data-remove-index]');
+        if (!remove || playing || recording) return;
+        const notes = parseMelody().filter(note => note === '-' || keys.has(note));
+        const index = Number(remove.dataset.removeIndex);
+        if (!Number.isInteger(index) || index < 0 || index >= notes.length) return;
+        notes.splice(index, 1);
+        syncMelodyFromNotes(notes);
+        clearRecordingButton.disabled = notes.length === 0;
+        status.textContent = notes.length ? 'Nota removida da sequência.' : 'Sequência limpa.';
+    });
+
     melody.addEventListener('input', () => {
+        renderSequence();
         error.hidden = true;
         melody.removeAttribute('aria-invalid');
         progress.value = 0;
@@ -278,6 +356,8 @@
     exampleButton.addEventListener('click', () => {
         if (recording) stopRecording();
         melody.value = 'D D F G G F D S A A S D D S S — D D F G G F D S A A S D S A A';
+        renderSequence();
+        clearRecordingButton.disabled = false;
         error.hidden = true;
         melody.removeAttribute('aria-invalid');
         progress.value = 0;
@@ -295,6 +375,8 @@
     tempo.addEventListener('input', () => {
         document.getElementById('tempo-value').textContent = `${tempo.value} BPM`;
     });
+    renderSequence();
+
     window.addEventListener('blur', clearKeys);
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
