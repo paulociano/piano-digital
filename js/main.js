@@ -23,15 +23,75 @@
     const recordingStatus = document.getElementById('recording-status');
     const sequenceTrack = document.getElementById('sequence-track');
     const sequenceCount = document.getElementById('sequence-count');
+    const performanceTimingButton = document.getElementById('performance-timing');
     const heldKeys = new Set();
     const pointers = new Map();
     const flashes = new Map();
+    const audioBuffers = new Map();
+    const activeSources = new Set();
+    let audioContext = null;
+    let masterGain = null;
+    let audioLoading = null;
     let timer = null;
     let playing = false;
     let recording = false;
     let recordingNotes = [];
+    let recordedPerformance = [];
+    let recordingLastTime = 0;
+    let usePerformanceTiming = false;
     let hasPlayedFirstNote = false;
     let run = 0;
+
+    function ensureAudioEngine() {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        if (!audioContext) {
+            audioContext = new AudioContextClass();
+            masterGain = audioContext.createGain();
+            masterGain.gain.value = Number(volume.value) / 100;
+            masterGain.connect(audioContext.destination);
+        }
+        if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+        if (!audioLoading) {
+            audioLoading = Promise.all(Array.from(sounds.entries()).map(async ([letter, audio]) => {
+                try {
+                    const response = await fetch(audio.currentSrc || audio.src);
+                    if (!response.ok) throw new Error('Audio fetch failed');
+                    const buffer = await response.arrayBuffer();
+                    const decoded = await audioContext.decodeAudioData(buffer);
+                    audioBuffers.set(letter, decoded);
+                } catch {
+                    // HTMLAudio remains the fallback when Web Audio cannot load a sample.
+                }
+            }));
+        }
+        return audioContext;
+    }
+
+    function playBufferedNote(letter) {
+        const context = ensureAudioEngine();
+        const buffer = audioBuffers.get(letter);
+        if (!context || !buffer || !masterGain) return false;
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(masterGain);
+        activeSources.add(source);
+        source.onended = () => activeSources.delete(source);
+        source.start();
+        return true;
+    }
+
+    function invalidatePerformanceTiming() {
+        recordedPerformance = [];
+        usePerformanceTiming = false;
+        performanceTimingButton.disabled = true;
+        performanceTimingButton.setAttribute('aria-pressed', 'false');
+    }
+
+    function performanceMatches(notes) {
+        if (recordedPerformance.length !== notes.length || notes.length === 0) return false;
+        return recordedPerformance.every((event, index) => event.note === notes[index]);
+    }
 
     function parseMelody(value = melody.value) {
         return Array.from(value.toLowerCase().replace(/\s/g, '').replace(/[–—]/g, '-'));
@@ -112,19 +172,24 @@
             introPrompt.innerHTML = '<span aria-hidden="true">↳</span> Agora experimente duas teclas juntas. Você já está tocando.';
         }
         if (recording && !playing) {
+            const now = performance.now();
+            const delay = recordingNotes.length ? Math.min(Math.max(now - recordingLastTime, 70), 2400) : 0;
+            recordingLastTime = now;
             recordingNotes.push(letter.toUpperCase());
+            recordedPerformance.push({note: letter, delay});
             melody.value = recordingNotes.join(' ');
             renderSequence();
             clearRecordingButton.disabled = false;
-            recordingStatus.textContent = `${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota gravada' : 'notas gravadas'}.`;
+            recordingStatus.textContent = `${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota gravada' : 'notas gravadas'} · ritmo capturado.`;
         }
+        currentNote.textContent = keys.get(letter).dataset.note;
+        if (playBufferedNote(letter)) return;
+
         const attempt = run;
         audio.volume = Number(volume.value) / 100;
         audio.currentTime = 0;
-        currentNote.textContent = keys.get(letter).dataset.note;
         const result = audio.play();
         if (result) result.catch(reason => {
-            // A stop or a retrigger may interrupt a pending play request.
             if (reason.name === 'AbortError' || attempt !== run) return;
             stopPlayback('Não foi possível tocar o áudio. Tente novamente.');
         });
@@ -149,6 +214,10 @@
         melody.readOnly = false;
         exampleButton.disabled = false;
         recordButton.disabled = false;
+        activeSources.forEach(source => {
+            try { source.stop(); } catch {}
+        });
+        activeSources.clear();
         sounds.forEach(audio => {
             audio.pause();
             if (audio.readyState > 0) audio.currentTime = 0;
@@ -250,7 +319,10 @@
         recordButton.disabled = true;
         progress.max = notes.length;
         progress.value = 0;
-        status.textContent = 'Tocando sua melodia. Use Parar ou Esc para interromper.';
+        const performanceMode = usePerformanceTiming && performanceMatches(notes);
+        status.textContent = performanceMode
+            ? 'Reproduzindo com o ritmo da sua performance. Use Parar ou Esc para interromper.'
+            : 'Tocando sua melodia no andamento definido. Use Parar ou Esc para interromper.';
         stopButton.focus();
         const thisRun = run;
         let index = 0;
@@ -265,7 +337,9 @@
             const noteIndex = index;
             const note = notes[index++];
             renderSequence(noteIndex);
-            const interval = 60000 / Number(tempo.value);
+            const interval = performanceMode && index < notes.length
+                ? Math.min(Math.max(recordedPerformance[index].delay, 70), 2400)
+                : 60000 / Number(tempo.value);
             if (note !== '-') {
                 playNote(note);
                 flashKey(note, Math.min(interval * .75, 350));
@@ -288,8 +362,13 @@
         recordingStatus.textContent = recordingNotes.length
             ? `Gravação concluída com ${recordingNotes.length} ${recordingNotes.length === 1 ? 'nota' : 'notas'}.`
             : 'Nenhuma nota gravada.';
+        if (recordingNotes.length) {
+            performanceTimingButton.disabled = recordedPerformance.length !== recordingNotes.length;
+            usePerformanceTiming = !performanceTimingButton.disabled;
+            performanceTimingButton.setAttribute('aria-pressed', String(usePerformanceTiming));
+        }
         status.textContent = recordingNotes.length
-            ? 'Sua performance virou uma sequência editável.'
+            ? 'Sua performance virou uma sequência editável, com o ritmo preservado.'
             : 'Toque alguma nota durante a gravação.';
     }
 
@@ -302,6 +381,11 @@
             return;
         }
         recordingNotes = [];
+        recordedPerformance = [];
+        recordingLastTime = performance.now();
+        usePerformanceTiming = false;
+        performanceTimingButton.disabled = true;
+        performanceTimingButton.setAttribute('aria-pressed', 'false');
         melody.value = '';
         renderSequence();
         progress.value = 0;
@@ -319,6 +403,7 @@
     clearRecordingButton.addEventListener('click', () => {
         if (recording) stopRecording();
         recordingNotes = [];
+        invalidatePerformanceTiming();
         melody.value = '';
         renderSequence();
         progress.value = 0;
@@ -341,12 +426,29 @@
         const index = Number(remove.dataset.removeIndex);
         if (!Number.isInteger(index) || index < 0 || index >= notes.length) return;
         notes.splice(index, 1);
+        invalidatePerformanceTiming();
         syncMelodyFromNotes(notes);
         clearRecordingButton.disabled = notes.length === 0;
         status.textContent = notes.length ? 'Nota removida da sequência.' : 'Sequência limpa.';
     });
 
+    performanceTimingButton.addEventListener('click', () => {
+        if (performanceTimingButton.disabled || playing || recording) return;
+        const notes = parseMelody();
+        if (!performanceMatches(notes)) {
+            invalidatePerformanceTiming();
+            status.textContent = 'O ritmo gravado foi descartado porque a sequência mudou.';
+            return;
+        }
+        usePerformanceTiming = !usePerformanceTiming;
+        performanceTimingButton.setAttribute('aria-pressed', String(usePerformanceTiming));
+        status.textContent = usePerformanceTiming
+            ? 'Playback configurado para preservar o ritmo gravado.'
+            : 'Playback configurado para seguir o BPM.';
+    });
+
     melody.addEventListener('input', () => {
+        invalidatePerformanceTiming();
         renderSequence();
         error.hidden = true;
         melody.removeAttribute('aria-invalid');
@@ -355,6 +457,7 @@
     });
     exampleButton.addEventListener('click', () => {
         if (recording) stopRecording();
+        invalidatePerformanceTiming();
         melody.value = 'D D F G G F D S A A S D D S S — D D F G G F D S A A S D S A A';
         renderSequence();
         clearRecordingButton.disabled = false;
@@ -371,6 +474,7 @@
     volume.addEventListener('input', () => {
         document.getElementById('volume-value').textContent = `${volume.value}%`;
         sounds.forEach(audio => { audio.volume = Number(volume.value) / 100; });
+        if (masterGain) masterGain.gain.value = Number(volume.value) / 100;
     });
     tempo.addEventListener('input', () => {
         document.getElementById('tempo-value').textContent = `${tempo.value} BPM`;
