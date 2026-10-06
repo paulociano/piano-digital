@@ -18,17 +18,21 @@
                 <img src="images/logo.png" width="44" height="41" alt="PH">
                 <span>PAULO HENRIQUE<span class="brand-detail">EXPERIMENTOS MUSICAIS</span></span>
             </a>
-            <span class="header-note">Um pouco de música no seu dia.</span>
+            <div class="header-actions">
+                <button type="button" class="shortcut-toggle" id="shortcut-toggle" aria-pressed="true">Teclas <span>A–K</span></button>
+                <span class="header-note">Um pouco de música no seu dia.</span>
+            </div>
         </header>
         <main>
             <section class="intro" aria-labelledby="title">
                 <p class="eyebrow">SEU PEQUENO ESTÚDIO</p>
                 <h1 id="title">Toda melodia começa<br>com <em>uma nota.</em></h1>
-                <p class="intro-copy">Explore os sons, encontre um ritmo e crie algo seu.<br> Toque nas teclas ou use as letras do seu teclado.</p>
+                <p class="intro-copy">Explore os sons, encontre um ritmo e crie algo seu.<br> Toque nas teclas, use o teclado ou grave uma ideia.</p>
+                <p class="intro-prompt" id="intro-prompt"><span aria-hidden="true">↳</span> Comece agora: toque uma tecla ou pressione <kbd>A</kbd>.</p>
             </section>
             <section class="instrument" id="piano" aria-label="Piano Digital" tabindex="-1">
                 <div class="instrument-toolbar">
-                    <div class="instrument-name"><span class="status-light" aria-hidden="true"></span> PIANO DIGITAL <span class="instrument-range">/ 13 TECLAS</span></div>
+                    <div class="instrument-name"><span class="status-light" aria-hidden="true"></span> PIANO DIGITAL <span class="instrument-range">/ ACÚSTICO · C4–C5</span></div>
                     <label class="volume-control" for="volume">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Zm4 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg>
                         <span class="sr-only">Volume</span>
@@ -53,11 +57,22 @@
                 </div>
                 <div class="instrument-bottom"><span>ACÚSTICO · UMA OITAVA</span><span id="current-note">Pronto para tocar</span></div>
             </section>
-            <div class="playing-tip"><span aria-hidden="true">↳</span> Combine teclas para tocar acordes. Deixe a curiosidade guiar.</div>
+            <div class="playing-tip"><span aria-hidden="true">↳</span> Combine teclas para tocar acordes. Arraste o dedo pelas teclas no touch.</div>
             <section class="composer" aria-labelledby="composer-title">
                 <div class="composer-heading">
-                    <div><p class="eyebrow">DA IDEIA AO SOM</p><h2 id="composer-title">Escreva sua melodia.</h2></div>
+                    <div><p class="eyebrow">DA IDEIA AO SOM</p><h2 id="composer-title">Capture sua melodia.</h2></div>
                     <button type="button" class="text-button" id="example">Experimentar um exemplo <span aria-hidden="true">↗</span></button>
+                </div>
+                <div class="capture-panel" aria-label="Gravação rápida">
+                    <div class="capture-copy">
+                        <span class="capture-kicker">PERFORMANCE</span>
+                        <strong>Toque. A sequência aparece aqui.</strong>
+                        <span id="recording-status">Pronto para gravar.</span>
+                    </div>
+                    <div class="capture-actions">
+                        <button type="button" class="record-button" id="record"><span class="record-dot" aria-hidden="true"></span><span id="record-label">Gravar</span></button>
+                        <button type="button" class="clear-button" id="clear-recording" disabled>Limpar</button>
+                    </div>
                 </div>
                 <form id="composer-form" novalidate>
                     <label for="melody">Sequência de notas</label>

@@ -124,3 +124,132 @@ footer span span { margin-inline: 9px; color: #a19588; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
 }
+
+
+/* Piano V2 · Arsenal experience pass */
+body {
+    background:
+        radial-gradient(circle at 50% -10%, rgba(255,255,255,.85), transparent 42%),
+        var(--paper);
+}
+.header-actions { display: flex; align-items: center; gap: 18px; }
+.shortcut-toggle {
+    min-height: 34px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255,255,255,.38);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .5px;
+}
+.shortcut-toggle span { margin-left: 5px; color: var(--copper); }
+.shortcut-toggle:hover { background: #fffaf4; color: var(--ink); }
+.intro { padding-bottom: 30px; }
+.intro-prompt {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 24px 0 0;
+    padding: 9px 13px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: rgba(255,255,255,.34);
+    font-size: 11px;
+}
+.intro-prompt > span { color: var(--copper); }
+.intro-prompt kbd {
+    min-width: 23px;
+    padding: 2px 6px;
+    border: 1px solid #cfc4b8;
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: #fffaf3;
+    color: var(--ink);
+    font: 700 10px "Segoe UI", Arial, sans-serif;
+}
+.instrument {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 28px 50px -24px #3323188a, inset 0 1px #ffffff24;
+}
+.instrument::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(115deg, rgba(255,255,255,.08), transparent 28%, transparent 70%, rgba(0,0,0,.12));
+}
+.instrument > * { position: relative; z-index: 1; }
+.key { overflow: hidden; }
+.white { position: relative; }
+.key::after {
+    content: "";
+    position: absolute;
+    left: 15%;
+    right: 15%;
+    bottom: 7px;
+    height: 3px;
+    border-radius: 999px;
+    background: #c98150;
+    box-shadow: 0 0 16px #dc956a;
+    opacity: 0;
+    transform: scaleX(.35);
+    transition: opacity 90ms, transform 90ms;
+}
+.key.active::after { opacity: .75; transform: scaleX(1); }
+.black::after { bottom: 8px; left: 22%; right: 22%; background: #e4a16c; }
+body.hide-shortcuts .key kbd { opacity: 0; transform: translateY(4px); }
+.key kbd { transition: opacity 160ms, transform 160ms; }
+.capture-panel {
+    margin: 0 0 22px;
+    padding: 18px 19px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255,255,255,.34);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+.capture-copy { display: grid; gap: 4px; }
+.capture-kicker {
+    color: var(--copper);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 1.7px;
+}
+.capture-copy strong { font-family: Georgia, "Times New Roman", serif; font-size: 17px; font-weight: 400; }
+#recording-status { color: var(--muted); font-size: 11px; }
+.capture-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.record-button, .clear-button {
+    min-height: 40px;
+    padding: 0 15px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.record-button { border: 1px solid var(--ink); background: var(--ink); color: #fffaf2; display: inline-flex; align-items: center; gap: 8px; }
+.record-button:hover:not(:disabled) { background: #513c2e; }
+.record-dot { width: 7px; height: 7px; border-radius: 50%; background: #d26f52; box-shadow: 0 0 0 3px rgba(210,111,82,.12); }
+.record-button.is-recording .record-dot { animation: recordPulse 1s ease-in-out infinite; background: #ff8b6b; }
+.clear-button { border: 1px solid #cfc4b8; background: transparent; color: var(--ink); }
+.clear-button:hover:not(:disabled) { background: #e9e2d8; }
+@keyframes recordPulse { 50% { transform: scale(1.45); opacity: .58; } }
+
+@media (max-width: 600px) {
+    .header-actions { gap: 8px; }
+    .shortcut-toggle { min-height: 32px; padding-inline: 9px; }
+    .shortcut-toggle span { display: none; }
+    .intro-prompt { font-size: 10px; margin-top: 19px; }
+    .instrument { margin-inline: -4px; }
+    .keys { height: clamp(190px, 52vw, 235px); }
+    .capture-panel { align-items: flex-start; flex-direction: column; gap: 14px; }
+    .capture-actions { width: 100%; }
+    .record-button { flex: 1; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .record-button.is-recording .record-dot { animation: none; }
+}
